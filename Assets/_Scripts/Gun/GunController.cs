@@ -27,7 +27,7 @@ public class GunController : MonoBehaviour
         {
             Destroy(_equippedGun.gameObject);
         }
-        _equippedGun = Instantiate(gunToEquip, _weaponHold.position, _weaponHold.rotation) as Gun;
+        _equippedGun = Instantiate(gunToEquip, _weaponHold.position, _weaponHold.rotation);
         _equippedGun.transform.parent = _weaponHold;
     }
 

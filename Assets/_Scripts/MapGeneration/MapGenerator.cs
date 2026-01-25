@@ -47,11 +47,15 @@ public class MapGenerator : MonoBehaviour
 
     public void GenerateMap()
     {
-        GetComponent<BoxCollider>().size = new Vector3(_currentMap.MapSize.x * _currentMap.TileSize, .5f, _currentMap.MapSize.y * _currentMap.TileSize);
-
         Transform mapHolder = Spawner.CreateMapHolder(_holderName, transform);
 
         LevelMapData mapData = GenerateMapData();
+
+        BoxCollider mapCollider = GetComponent<BoxCollider>();
+        mapCollider.size = new Vector3(_currentMap.MapSize.x * _currentMap.TileSize, .5f, _currentMap.MapSize.y * _currentMap.TileSize);
+        mapCollider.center = new Vector3(0, -.5f / 2f, 0);
+
+        NavMeshSurface.RemoveData();
 
         Spawner.SpawnMap(mapData, _mapSettings, _currentMap, mapHolder);
 
