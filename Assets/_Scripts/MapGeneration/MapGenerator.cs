@@ -37,8 +37,9 @@ public class MapGenerator : MonoBehaviour
         }
     }
 
-    private void Start()
+    public void OnNewWave(int waveNumber)
     {
+        _mapIndex = waveNumber - 1;
         GenerateMap();
     }
 

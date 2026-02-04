@@ -4,11 +4,36 @@ using static MapSettings;
 
 public class MapSpawner : MonoBehaviour
 {
+    private static readonly int ColorProperty = Shader.PropertyToID("_BaseColor");
+    private MaterialPropertyBlock _propBlock;
+
     private Transform[,] _tileMap;
 
     public Transform GetTileAt(int x, int y)
     {
         return _tileMap[x, y];
+    }
+
+    public Transform CreateMapHolder(string name, Transform parent)
+    {
+        Transform oldHolder = parent.Find(name);
+        if (oldHolder)
+        {
+#if UNITY_EDITOR
+            Undo.DestroyObjectImmediate(oldHolder.gameObject);
+#else
+            Destroy(oldHolder.gameObject);
+#endif
+        }
+
+        GameObject go = new GameObject(name);
+
+#if UNITY_EDITOR
+        Undo.RegisterCreatedObjectUndo(go, "Generate Map");
+#endif
+
+        go.transform.parent = parent;
+        return go.transform;
     }
 
     public void SpawnMap(LevelMapData mapData, MapSettings settings, MapConfig currentMap, Transform holder)
@@ -71,12 +96,10 @@ public class MapSpawner : MonoBehaviour
             if (mods.Value.color.HasValue)
             {
                 Renderer obstacleRenderer = gameObject.GetComponent<Renderer>();
-                Material obstacleMaterial = new Material(obstacleRenderer.sharedMaterial);
 
                 if (obstacleRenderer != null)
                 {
-                    obstacleMaterial.color = mods.Value.color.Value;
-                    obstacleRenderer.sharedMaterial = obstacleMaterial;
+                    ApplyColor(obstacleRenderer, mods.Value.color.Value);
                 }
             }
         }
@@ -90,26 +113,16 @@ public class MapSpawner : MonoBehaviour
         return gameObject.transform; 
     }
 
-    public Transform CreateMapHolder(string name, Transform parent)
+    private void ApplyColor(Renderer renderer, Color color)
     {
-        Transform oldHolder = parent.Find(name);
-        if (oldHolder)
-        {
-#if UNITY_EDITOR
-            Undo.DestroyObjectImmediate(oldHolder.gameObject);
-#else
-            Destroy(oldHolder.gameObject);
-#endif
-        }
+        if (_propBlock == null)
+            _propBlock = new MaterialPropertyBlock();
 
-        GameObject go = new GameObject(name);
+        renderer.GetPropertyBlock(_propBlock);
 
-#if UNITY_EDITOR
-        Undo.RegisterCreatedObjectUndo(go, "Generate Map");
-#endif
+        _propBlock.SetColor(ColorProperty, color);
 
-        go.transform.parent = parent;
-        return go.transform;
+        renderer.SetPropertyBlock(_propBlock);
     }
 
     private struct VisualModifiers

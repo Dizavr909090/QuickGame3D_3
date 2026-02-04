@@ -1,3 +1,4 @@
+using JetBrains.Annotations;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -59,13 +60,16 @@ public struct LevelMapData
     public MapGrid grid;
     private Queue<Coord> _shuffledOpenCoords;
 
+    public Coord center => new Coord((int)mapSize.x / 2, (int)mapSize.y / 2);
+
     public LevelMapData(TileType[,] TileMap, Vector2 MapSize, float tileSize, int seed, MapGrid Grid)
     {
         tileMap = TileMap;
         mapSize = MapSize;
         grid = Grid;
 
-        // Сразу вычисляем свободные клетки при создании данных
+        
+
         List<Coord> openCoords = new List<Coord>();
         for (int x = 0; x < tileMap.GetLength(0); x++)
         {

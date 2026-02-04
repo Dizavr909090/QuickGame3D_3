@@ -9,21 +9,24 @@ public class MapGrid
     {
         _mapSize = mapSize;
         _tileSize = tileSize;
+
     }
 
     public Vector3 CoordToWorld(Coord coord)
     {
-        return new Vector3(
-            (-_mapSize.x / 2f + 0.5f + coord.x) * _tileSize,
-            0,
-            (-_mapSize.y / 2f + 0.5f + coord.y) * _tileSize
-            );
+        float offsetX = -_mapSize.x / 2f + 0.5f;
+        float offsetZ = -_mapSize.y / 2f + 0.5f;
+
+        float x = (offsetX + coord.x) * _tileSize;
+        float z = (offsetZ + coord.y) * _tileSize;
+
+        return new Vector3(x, 0, z);
     }
 
-    public Coord WorldToCoord(Vector3 worldPos)
+    public Coord WorldToCoord(Vector3 position)
     {
-        int x = Mathf.RoundToInt(worldPos.x / _tileSize + (_mapSize.x -1) / 2f);
-        int y = Mathf.RoundToInt(worldPos.z / _tileSize + (_mapSize.y - 1) / 2f);
+        int x = Mathf.RoundToInt(position.x / _tileSize + (_mapSize.x -1) / 2f);
+        int y = Mathf.RoundToInt(position.z / _tileSize + (_mapSize.y - 1) / 2f);
 
         return new Coord(
             Mathf.Clamp(x, 0, (int)_mapSize.x - 1),

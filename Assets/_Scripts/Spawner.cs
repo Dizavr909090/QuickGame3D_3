@@ -4,36 +4,32 @@ using UnityEngine;
 
 public class Spawner : MonoBehaviour
 {
-    [SerializeField] private Wave[] _waves;
+    public event Action EnemyDeath;
+
     [SerializeField] private Enemy _enemyPrefab;
     [SerializeField] private float _spawnDelay = 1f;
     [SerializeField] private float _tileFlashSpeed = 4f;
     [SerializeField] private float _campThresholdDistance = 1.5f;
     [SerializeField] private float _timeBetweenCampingChecks = 2;
+    [SerializeField] private MapSpawner _mapSpawner;
 
-    private MapSpawner _mapVisualizer;
     private LevelMapData _mapData;
     private bool _hasMapData;
     private Entity _playerEntity;
     private Transform _playerTransform;
     private ITargetable _target;
 
-    private Wave _currentWave;
-    private int _currentWaveNumber;
-
-    private int _enemiesRemainingToSpawn;
-    private int _enemiesRemainingAlive;
-    private float _nextSpawnTime;
-    private bool _isDisabled;
     private float _nextCampCheckTime;
     private Vector3 _campPositionOld;
     private bool _isCamping;
+
+    private bool _isDisabled;
 
     private void Start()
     {
         InitializePlayer();
 
-        NextWave();
+        if (_mapSpawner == null) _mapSpawner = FindFirstObjectByType<MapSpawner>();
     }
 
     private void Update()
@@ -41,7 +37,6 @@ public class Spawner : MonoBehaviour
         if (!_isDisabled)
         {
             CampingCheck();
-            SpawnEnemy();
         }
     }
 
@@ -49,14 +44,15 @@ public class Spawner : MonoBehaviour
     {
         _mapData = data;
         _hasMapData = true;
+
+        ResetPlayerPosition();
     }
 
     private IEnumerator SpawnEnemySequence(Coord spawnCoord)
     {
         Vector3 spawnPosition = _mapData.grid.CoordToWorld(spawnCoord);
-
-        if (_mapVisualizer == null) _mapVisualizer = FindFirstObjectByType<MapSpawner>();
-        Transform tileTransform = _mapVisualizer.GetTileAt(spawnCoord.x, spawnCoord.y);
+ 
+        Transform tileTransform = _mapSpawner.GetTileAt(spawnCoord.x, spawnCoord.y);
 
         Renderer tileRenderer = tileTransform.GetComponent<Renderer>();
         Material tileMat = tileRenderer.material;
@@ -82,49 +78,25 @@ public class Spawner : MonoBehaviour
         spawnedEnemy.OnDeath += OnEnemyDeath;
     }
 
-    private void SpawnEnemy()
+    public void SpawnEnemy()
     {
         if (!_hasMapData) return;
 
-        if (_enemiesRemainingToSpawn > 0 && Time.time > _nextSpawnTime)
+        Coord spawnCoord = _mapData.GetRandomOpenTile();
+
+        if (_isCamping)
         {
-            _enemiesRemainingToSpawn--;
-            _nextSpawnTime = Time.time + _currentWave._timeBetweenSpawns;
-
-            Coord spawnCoord = _mapData.GetRandomOpenTile();
-
-            if (_isCamping)
-            {
-                spawnCoord = _mapData.grid.WorldToCoord(_playerTransform.position);
-            }
-
-            StartCoroutine(SpawnEnemySequence(spawnCoord));
+            spawnCoord = _mapData.grid.WorldToCoord(_playerTransform.position);
         }
-    }
 
-    private void NextWave()
-    {
-        _currentWaveNumber++;
-        
-        if (_currentWaveNumber - 1 < _waves.Length)
-        {
-            print("Wave: " + _currentWaveNumber);
-            _currentWave = _waves[_currentWaveNumber - 1];
-
-            _enemiesRemainingToSpawn = _currentWave._enemyCount;
-            _enemiesRemainingAlive = _enemiesRemainingToSpawn;
-        }
+        StartCoroutine(SpawnEnemySequence(spawnCoord));
     }
 
     private void OnEnemyDeath(Entity entity)
     {
         entity.OnDeath -= OnEnemyDeath;
 
-        _enemiesRemainingAlive --;
-        if (_enemiesRemainingAlive == 0)
-        {
-            NextWave();
-        }
+        EnemyDeath?.Invoke();
     }
 
     private void CampingCheck()
@@ -155,10 +127,14 @@ public class Spawner : MonoBehaviour
         _isDisabled = true;
     }
 
-    [Serializable]
-    private class Wave
+    private void ResetPlayerPosition()
     {
-        public int _enemyCount;
-        public float _timeBetweenSpawns;
+        if (!_hasMapData) return;
+
+        Coord centerCoord = _mapData.center;
+
+        Vector3 centerWorldPos = _mapData.grid.CoordToWorld(centerCoord);
+
+        _playerTransform.position = centerWorldPos + Vector3.up * 3f;
     }
 }
